@@ -12,7 +12,6 @@ def parse(file_path: str, file_contents):
 def get_data_from_folder(path):
     transactions = []
     for entry in os.scandir(path):
-        print(type(entry.path))
         with (open(entry.path)) as f:
             data = parse(entry.path, f)
             if data:
@@ -33,10 +32,11 @@ def write_to_output(transactions, filename):
 def create_sql_connection():
     connection = None
     with open("tools\schema.sql") as fp:
+        if not os.path.exists("output"):
+            os.makedirs("output")
         connection = sqlite3.connect("output\output.db")
         connection.execute("PRAGMA foreign_keys = 1")
         connection.executescript(fp.read())
-
     return connection
 
 
