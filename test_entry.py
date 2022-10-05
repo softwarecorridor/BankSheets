@@ -7,7 +7,7 @@ class TestDataEntry(TestCase):
         data = ["02/11/2021", "491091136970529302963377", "Popeyes", "Frankfurt        IL ", "-10.02"]
         under_test = DataEntry(data)
         self.assertEqual(under_test.date.strftime("%m/%d/%Y"), data[0])
-        self.assertEqual(under_test.amount, data[4][1:])
+        self.assertEqual(under_test.amount, data[4])
         self.assertEqual(under_test.description, data[2])
 
     def test_fail_parse(self):
@@ -58,5 +58,5 @@ class TestDataEntry(TestCase):
         data_1 = ["02/11/2021", "724147348169329461422028", "RALLY", "SEATTLE        NY ", "-10.02"]
 
         ut_1 = DataEntry(data_1)
-        expected = "02/11/2021	10.02	RALLY"
+        expected = "02/11/2021	-10.02	RALLY"
         self.assertEqual(expected, str(ut_1))

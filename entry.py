@@ -7,13 +7,6 @@ class DataEntry:
         self.amount = data_blob[4]
         self.description = data_blob[2]
         self.id = data_blob[1]
-        self.__invert_amount__()
-
-    def __invert_amount__(self):
-        if self.amount.startswith("-"):
-            self.amount = self.amount[1:]
-        else:
-            self.amount = f"-{self.amount}"
 
     def __str__(self) -> str:
         return f"{self.date.strftime('%m/%d/%Y')}\t{self.amount}\t{self.description}"
