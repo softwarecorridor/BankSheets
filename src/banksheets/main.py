@@ -1,10 +1,10 @@
 import os
-import institution_parser
+from banksheets.institution_parser import decide
 import sqlite3
 
 
 def parse(file_path: str, file_contents):
-    institution = institution_parser.decide(file_path, file_contents)
+    institution = decide(file_path, file_contents)
     if institution:
         return institution.report()
 

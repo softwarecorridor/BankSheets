@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import csv
-from entry import DataEntry
+from banksheets.entry import DataEntry
 
 
 class Institution(metaclass=ABCMeta):
