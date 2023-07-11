@@ -1,5 +1,5 @@
 from unittest import TestCase
-from entry import DataEntry
+from banksheets.entry import DataEntry
 
 
 class TestDataEntry(TestCase):
