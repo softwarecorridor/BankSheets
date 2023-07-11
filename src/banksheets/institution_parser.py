@@ -1,7 +1,7 @@
 from __future__ import annotations
-from institution import BankOfAmerica
-from institution import BankOfAmericaCreditCard
-from institution import WellsFargo
+from banksheets.institution import BankOfAmerica
+from banksheets.institution import BankOfAmericaCreditCard
+from banksheets.institution import WellsFargo
 
 
 def decide(file_path: str, file_contents):

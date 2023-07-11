@@ -1,10 +1,10 @@
 import os
-import institution_parser
+from banksheets.institution_parser import decide
 import sqlite3
 
 
 def parse(file_path: str, file_contents):
-    institution = institution_parser.decide(file_path, file_contents)
+    institution = decide(file_path, file_contents)
     if institution:
         return institution.report()
 
@@ -29,9 +29,10 @@ def write_to_output(transactions, filename):
             f.write(f"{str(item)}\n")
 
 
+# TODO: use import resources instead of path
 def create_sql_connection():
     connection = None
-    with open("tools\schema.sql") as fp:
+    with open("data\schema.sql") as fp:
         if not os.path.exists("output"):
             os.makedirs("output")
         connection = sqlite3.connect("output\output.db")
@@ -64,7 +65,8 @@ def insert_transactions(data_entries, sql_connection):
     sql_connection.commit()
 
 
-if __name__ == '__main__':
+
+def main():
     transaction_data = get_data_from_folder("input")
     sql_conn = create_sql_connection()
     if sql_conn:

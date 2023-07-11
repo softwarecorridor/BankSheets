@@ -1,6 +1,7 @@
-__pycache__
-.vscode
-.idea
-input
-output
-venv
+__pycache__/
+.venv/
+.vscode/
+.idea/
+input/
+output/
+*egg-info/
