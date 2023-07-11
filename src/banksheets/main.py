@@ -29,9 +29,10 @@ def write_to_output(transactions, filename):
             f.write(f"{str(item)}\n")
 
 
+# TODO: use import resources instead of path
 def create_sql_connection():
     connection = None
-    with open("tools\schema.sql") as fp:
+    with open("data\schema.sql") as fp:
         if not os.path.exists("output"):
             os.makedirs("output")
         connection = sqlite3.connect("output\output.db")
@@ -64,7 +65,8 @@ def insert_transactions(data_entries, sql_connection):
     sql_connection.commit()
 
 
-if __name__ == '__main__':
+
+def main():
     transaction_data = get_data_from_folder("input")
     sql_conn = create_sql_connection()
     if sql_conn:
