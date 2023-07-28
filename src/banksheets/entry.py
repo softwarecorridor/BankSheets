@@ -1,30 +1,16 @@
 from datetime import datetime
+from dataclasses import dataclass
 
-
+@dataclass(order=True, frozen = True)
 class DataEntry:
-    def __init__(self, data_blob: list) -> None:
-        self.date = datetime.strptime(data_blob[0], "%m/%d/%Y")
-        self.amount = data_blob[4]
-        self.description = data_blob[2]
-        self.id = data_blob[1]
+        date: datetime
+        data_id: int
+        description: str
+        amount: float
 
-    def __str__(self) -> str:
-        return f"{self.date.strftime('%m/%d/%Y')}\t{self.amount}\t{self.description}"
+        def __post_init__(self):
+            self.date = datetime.strptime(self.t, "%Y-%m-%d")
 
-    def __lt__(self, other):
-        return self.date < other.date
+        def __str__(self) -> str:
+            return f"{self.date.strftime('%m/%d/%Y')}\t{self.amount}\t{self.description}"
 
-    def __gt__(self, other):
-        return self.date > other.date
-
-    def __le__(self, other):
-        return self.date <= other.date
-
-    def __ge__(self, other):
-        return self.date >= other.date
-
-    def __eq__(self, other):
-        return self.date == other.date and self.amount == other.amount and self.description == self.description
-
-    def __repr__(self):
-        return f"DataEntry({str(self)})"
