@@ -1,6 +1,5 @@
 import os
 from banksheets.institution_parser import decide
-from sqlite3 import Connection, Cursor, connect
 from banksheets.entry import DataEntry
 from banksheets.database import (
     create_sql_connection,
