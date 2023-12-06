@@ -49,6 +49,7 @@ def get_dummy_transactions() -> list[DataEntry]:
         DataEntry("11/11/2022", None, "ONE", "Groceries", 11.11),
         DataEntry("11/12/2022", None, "TWO", "Fun", 11.11),
         DataEntry("11/13/2022", None, "THREE", "Electricity", 11.11),
+        DataEntry("11/11/2022", None, "ONE", "Groceries", 11.11),
     ]
 
 
@@ -71,6 +72,19 @@ def get_duplicate_entries(entries: list[DataEntry]) -> list[DataEntry]:
     return list(duplicates)
 
 
+def query_user_to_filter_duplicates(entries: DataEntry) -> list[DataEntry]:
+    filtered_list = []
+    seen_entries = set()
+    for item in entries:
+        if item in seen_entries:
+            if query_user_to_duplicate(item):
+                filtered_list.append(item)
+        else:
+            filtered_list.append(item)
+        seen_entries.add(item)
+    return filtered_list
+
+
 def query_user_to_duplicate(entry: DataEntry) -> bool:
     user_input = input(f"Duplicate detects\n\t{entry}\nHit y to keep")
     return user_input == "y"
@@ -82,12 +96,9 @@ def main(path: Path):
 
     if sql_conn:
         transaction_data = get_dummy_transactions()
-        # insert_dummy_data(sql_conn)
-        # dummies = get_dummy_inserts()
-        # TODO: check for duplicates from user
-
-        insert_descriptions(transaction_data, sql_conn)
-        insert_potential_transactions(transaction_data, sql_conn)
+        filtered_transaction_data = query_user_to_filter_duplicates(transaction_data)
+        insert_descriptions(filtered_transaction_data, sql_conn)
+        insert_potential_transactions(filtered_transaction_data, sql_conn)
         duplicate_records = get_duplicate_records(sql_conn)
         save_records = []
         if len(duplicate_records) > 0:
