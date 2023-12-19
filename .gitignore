@@ -1,7 +1,16 @@
 __pycache__/
-.venv/
-.vscode/
-.idea/
+*egg-info/
+
+# project specific
 input/
 output/
-*egg-info/
+
+# pycharm
+.idea/
+
+# virtual environment
+.venv/
+venv/
+
+# VS code
+.vscode/
