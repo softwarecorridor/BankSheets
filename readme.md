@@ -5,14 +5,12 @@ Simple program that takes csv data from various banks and puts the data into the
 ## Development
 
 - Create a virtual environment
-- install 
+- install
 ```shell
-    pip install -e .
+    pip install -e .[dev]
 ```
 
 ## How to use
 Create a folder called input and put your bank csv in there.
 
 run main.py
-
-
