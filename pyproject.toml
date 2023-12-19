@@ -1,3 +1,26 @@
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "banksheets"
+version = "2023.12.18"
+readme = "readme.md"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["pytest", "pre-commit", "isort", "black", "flake8"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.isort]
+profile = "black"
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203, W503"
+exclude = [
+  "venv",
+  ".tox",
+]
