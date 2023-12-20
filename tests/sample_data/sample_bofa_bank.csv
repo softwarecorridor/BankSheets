@@ -1,0 +1,12 @@
+Description,,Summary Amt.
+"Beginning balance as of 01/01/2023",,"99999999.99"
+"Total credits",,"123.13"
+"Total debits",,"-33.52"
+"Ending balance as of 10/12/2023",,"99999999.99"
+
+Date,Description,Amount,"Running Bal."
+1/1/2023,"Transaction A",50.25,"99999950.74"
+2/15/2023,"Transaction B",-20.30,"99999930.44"
+3/10/2023,"Transaction C",30.50,"99999960.94"
+4/5/2023,"Transaction D",-15.80,"99999945.14"
+5/20/2023,"Transaction E",40.60,"99999985.74"
