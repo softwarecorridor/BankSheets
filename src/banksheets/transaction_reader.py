@@ -1,72 +1,98 @@
-from collections.abc import Iterator
 from csv import DictReader
-from pathlib import Path
+from io import TextIOWrapper
+from typing import Any
 
-from dateutil.parser import parse
+from dateutil.parser import ParserError, parse
+
+_SQL_KEYS = ["date", "amount", "description", "transaction_id"]
+
+_MAP_CONVERSION = {
+    ("Posted Date", "Reference Number", "Payee", "Address", "Amount"): [
+        _SQL_KEYS[0],
+        None,
+        _SQL_KEYS[2],
+        None,
+        _SQL_KEYS[1],
+    ],
+    ("Date", "Description", "Amount", "Running Bal."): [
+        _SQL_KEYS[0],
+        _SQL_KEYS[2],
+        _SQL_KEYS[1],
+        None,
+    ],
+}
 
 
 class NoHeaderException(Exception):
-    def __init__(self, file_name: Path) -> None:
-        super().__init__(f"{file_name.stem} has no headers to key off of.")
+    def __init__(self) -> None:
+        super().__init__("CSV file has no headers to key off of.")
 
 
-class SkipAheadDictReader:
+class SkipAheadDictReader(DictReader):
     """
     Skips over any summary information and return a DictReader with just the
     transaction data.
 
-    Returns:
-        csv.DictReader
+    raises:
+        NoHeaderException if there aren't anything we detect as a header.
     """
 
-    def __init__(self, file_path: Path) -> None:
-        self.file_path = file_path
-        self.file = None
+    def __init__(self, file: TextIOWrapper) -> None:
+        if file is None:
+            raise TypeError("SkipAheadDictReader doesn't accept None objects.")
+        self.file = file
+        headers = self._get_headers()
+        new_headers = self._convert(headers)
+        super().__init__(self.file, new_headers)
 
-    def __enter__(self) -> Iterator[dict[str, str]]:
-        header_line_index = self._get_header_line_index(Path(self.file_path))
-        if header_line_index < 0:
-            raise NoHeaderException(self.file_path)
+    def __next__(self) -> dict[Any, str | Any]:
+        d = super().__next__()
+        del d[None]
+        return d
 
-        self.file = open(self.file_path, "r")
+    def _get_headers(self) -> tuple[int, list[str]]:
+        position = 0
+        found = False
+        line = self.file.readline()
+        prev_row_segments = []
+        while line != "" and not found:
+            split_line = line.split(",")
+            if len(split_line) > 0:
+                first_segment_is_date = SkipAheadDictReader._contains_date(split_line)
+                if first_segment_is_date:
+                    if prev_row_segments == []:
+                        raise NoHeaderException()
+                    else:
+                        found = True
+                else:
+                    position = self.file.tell()
+                    prev_row_segments = split_line
 
-        for _ in range(header_line_index):
-            next(self.file)
+                if not found:
+                    line = self.file.readline()
 
-        return DictReader(self.file)
+        self.file.seek(position)
+        return prev_row_segments
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        if self.file:
-            self.file.close()
-
-    def _get_header_line_index(self, file_path: Path) -> int:
-        with open(file_path, "r") as f:
-            found_header = False
-            possible_line = -1
-            current_line = 0
-            line = f.readline()
-            while line != "" and not found_header:
-                split_line = line.split(",")
-                if len(split_line) > 0:
-                    contains_date = self._is_date(split_line[0])
-                    if possible_line > -1:
-                        if contains_date:
-                            found_header = True
-                        else:
-                            possible_line = -1
-                    if possible_line == -1 and not found_header:
-                        if not contains_date:
-                            possible_line = current_line
-                current_line += 1
-                line = f.readline()
-
-            if not found_header:
-                possible_line = -1
-            return possible_line
-
-    def _is_date(self, text: str) -> bool:
+    @staticmethod
+    def _contains_date(args: list[str]) -> bool:
         try:
+            text = args[0].strip('"')
             parse(text)
             return True
         except ValueError:
             return False
+        except ParserError as e:
+            print(e)
+            return False
+
+    @staticmethod
+    def _convert(header_row: list[str]) -> list[str]:
+        key = SkipAheadDictReader._get_key(header_row)
+        return _MAP_CONVERSION[key]
+
+    @staticmethod
+    def _get_key(header_row: list[str]) -> tuple[str]:
+        new_headers = header_row
+        new_headers[-1] = new_headers[-1].strip()
+        return tuple(new_headers)
