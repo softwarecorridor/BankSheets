@@ -4,14 +4,14 @@ from typing import Any
 
 from dateutil.parser import ParserError, parse
 
-_SQL_KEYS = ["date", "amount", "description", "transaction_id"]
+_SQL_KEYS = ["date", "amount", "description", "extra_desc"]
 
 _MAP_CONVERSION = {
     ("Posted Date", "Reference Number", "Payee", "Address", "Amount"): [
         _SQL_KEYS[0],
         None,
         _SQL_KEYS[2],
-        None,
+        _SQL_KEYS[3],
         _SQL_KEYS[1],
     ],
     ("Date", "Description", "Amount", "Running Bal."): [

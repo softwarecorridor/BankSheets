@@ -16,7 +16,9 @@ def test_bofa_cc(bofa_cc_test_file):
         under_test = SkipAheadDictReader(csvfile)
         rows = list(under_test)
         assert len(rows) == 5
-        assert all(item in rows[0] for item in ["date", "amount", "description"])
+        assert all(
+            item in rows[0] for item in ["date", "amount", "description", "extra_desc"]
+        )
 
 
 def test_wells_bank(wells_bank_test_file):
