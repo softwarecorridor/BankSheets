@@ -51,7 +51,7 @@ def _convert_duplicate_records_to_entries(duplicate: list[tuple]) -> list[DataEn
 
 
 def _convert_duplicate_to_entry(record: tuple):
-    return DataEntry(record[0], None, record[1], None, record[2])
+    return DataEntry(record[0], record[2], record[1], None)
 
 
 def get_duplicate_entries(entries: list[DataEntry]) -> list[DataEntry]:
