@@ -37,47 +37,12 @@ def convert_csv_data_to_dataentry(items: list[dict[str, str]]) -> list[DataEntry
     return list(converted)
 
 
-def get_dummy_transactions() -> list[DataEntry]:
-    return [
-        DataEntry("11/11/2022", None, "ONE", "Groceries", 11.11),
-        DataEntry("11/12/2022", None, "TWO", "Fun", 11.11),
-        DataEntry("11/13/2022", None, "THREE", "Electricity", 11.11),
-        DataEntry("11/11/2022", None, "ONE", "Groceries", 11.11),
-    ]
-
-
 def _convert_duplicate_records_to_entries(duplicate: list[tuple]) -> list[DataEntry]:
     return list(map(_convert_duplicate_to_entry, duplicate))
 
 
 def _convert_duplicate_to_entry(record: tuple):
     return DataEntry(record[0], record[2], record[1], None)
-
-
-def get_duplicate_entries(entries: list[DataEntry]) -> list[DataEntry]:
-    uniques = []
-    duplicates = set()
-    for entry in entries:
-        if entry not in uniques:
-            uniques.append(entry)
-        else:
-            duplicates.add(entry)
-    return list(duplicates)
-
-
-def query_user_to_filter_duplicates(entries: list[DataEntry]) -> list[DataEntry]:
-    filtered_list = []
-    seen_entries = set()
-    for item in entries:
-        if item is not None:
-            should_remove = False
-            if item in seen_entries:
-                should_remove = query_user_to_duplicate(item)
-
-            if not should_remove:
-                filtered_list.append(item)
-            seen_entries.add(item)
-    return filtered_list
 
 
 def query_user_to_duplicate(entry: DataEntry) -> bool:
@@ -89,11 +54,9 @@ def main(path: Path):
     sql_conn = create_sql_connection(path)
     transaction_data = get_data_from_folder(Path.cwd() / "input")
     transaction_data = convert_csv_data_to_dataentry(transaction_data)
-
     if sql_conn:
-        filtered_transaction_data = query_user_to_filter_duplicates(transaction_data)
-        insert_descriptions(filtered_transaction_data, sql_conn)
-        insert_potential_transactions(filtered_transaction_data, sql_conn)
+        insert_descriptions(transaction_data, sql_conn)
+        insert_potential_transactions(transaction_data, sql_conn)
         duplicate_records = get_duplicate_records(sql_conn)
         save_records = []
         if len(duplicate_records) > 0:
