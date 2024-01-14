@@ -1,6 +1,7 @@
-from sqlite3 import Connection, Cursor, connect
-from banksheets.entry import DataEntry
 from pathlib import Path
+from sqlite3 import Connection, connect
+
+from banksheets.entry import DataEntry
 
 
 # TODO: make sure that we are using the correct key
@@ -16,7 +17,8 @@ def create_sql_connection(path: Path):
 def insert_descriptions(data_entries: list[DataEntry], sql_connection: Connection):
     to_insert = []
     for datum in data_entries:
-        to_insert.append((datum.description,))
+        if datum is not None:
+            to_insert.append((datum.description,))
 
     sql_connection.executemany(
         "INSERT OR IGNORE INTO description(name) VALUES (?);", to_insert
@@ -27,14 +29,16 @@ def insert_descriptions(data_entries: list[DataEntry], sql_connection: Connectio
 def insert_potential_transactions(data_entries, sql_connection: Connection):
     to_insert = []
     for datum in data_entries:
-        desc_id_query = sql_connection.execute(
-            "SELECT description_id FROM description WHERE name=?", (datum.description,)
-        )
-        query_result = desc_id_query.fetchone()
-        if query_result:
-            to_insert.append(
-                (datum.date.strftime("%m/%d/%Y"), datum.amount, query_result[0])
+        if datum is not None:
+            desc_id_query = sql_connection.execute(
+                "SELECT description_id FROM description WHERE name=?",
+                (datum.description,),
             )
+            query_result = desc_id_query.fetchone()
+            if query_result:
+                to_insert.append(
+                    (datum.date.strftime("%m/%d/%Y"), datum.amount, query_result[0])
+                )
     sql_connection.executemany(
         "INSERT OR IGNORE INTO potential_transaction(date, amount, description, preserve ) VALUES (?, ?, ?, 0);",
         to_insert,
