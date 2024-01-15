@@ -23,6 +23,11 @@ _MAP_CONVERSION = {
 }
 
 
+class MissingHeadingMapping(Exception):
+    def __init__(self) -> None:
+        super().__init__("CSV file headers don't have a BankSheets mapping.")
+
+
 class NoHeaderException(Exception):
     def __init__(self) -> None:
         super().__init__("CSV file has no headers to key off of.")
@@ -89,7 +94,10 @@ class SkipAheadDictReader(DictReader):
     @staticmethod
     def _convert(header_row: list[str]) -> list[str]:
         key = SkipAheadDictReader._get_key(header_row)
-        return _MAP_CONVERSION[key]
+        if key in _MAP_CONVERSION:
+            return _MAP_CONVERSION[key]
+        else:
+            raise MissingHeadingMapping()
 
     @staticmethod
     def _get_key(header_row: list[str]) -> tuple[str]:

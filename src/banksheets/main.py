@@ -10,7 +10,11 @@ from banksheets.database import (
     save_potential_records,
 )
 from banksheets.entry import DataEntry
-from banksheets.transaction_reader import NoHeaderException, SkipAheadDictReader
+from banksheets.transaction_reader import (
+    MissingHeadingMapping,
+    NoHeaderException,
+    SkipAheadDictReader,
+)
 
 
 def get_data_from_folder(folder: Path) -> list[dict[str, str]]:
@@ -21,6 +25,8 @@ def get_data_from_folder(folder: Path) -> list[dict[str, str]]:
                 reader = SkipAheadDictReader(f)
                 transactions.extend(list(reader))
             except NoHeaderException:
+                pass
+            except MissingHeadingMapping:
                 pass
 
     return transactions
