@@ -7,9 +7,10 @@ name = "banksheets"
 version = "2023.12.18"
 readme = "readme.md"
 requires-python = ">=3.10"
+dependencies = ["python-dateutil"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pre-commit", "isort", "black", "flake8"]
+dev = ["pytest", "pre-commit", "isort", "black", "flake8", "pyproject-flake8"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -19,8 +20,4 @@ profile = "black"
 
 [tool.flake8]
 max-line-length = 88
-extend-ignore = "E203, W503"
-exclude = [
-  "venv",
-  ".tox",
-]
+extend-ignore = ["E203"]

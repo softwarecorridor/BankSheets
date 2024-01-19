@@ -35,4 +35,22 @@ INNER JOIN
 ON
     potential_date = actual_date
 	AND potential_amount = actual_amount
-    AND potential_description = actual_description;
+    AND potential_description = actual_description
+
+UNION
+
+SELECT DISTINCT
+    pt.date AS potential_date,
+    pt.amount AS potential_amount,
+    pt.description AS potential_description,
+    NULL AS actual_date,
+    NULL AS actual_amount,
+    NULL AS actual_description
+FROM
+    potential_transaction pt
+GROUP BY
+    pt.date,
+    pt.amount,
+    pt.description
+HAVING
+    COUNT(*) > 1;
