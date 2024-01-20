@@ -16,6 +16,9 @@ def create_sql_connection(path: Path):
 
 
 def insert_descriptions(data_entries: list[DataEntry], sql_connection: Connection):
+    if data_entries is None:
+        raise TypeError()
+
     to_insert = []
     for datum in data_entries:
         if datum is not None:
