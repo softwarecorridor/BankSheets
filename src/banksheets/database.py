@@ -1,14 +1,15 @@
+from importlib.resources import files
 from pathlib import Path
 from sqlite3 import Connection, connect
 
 from banksheets.entry import DataEntry
 
 
-# TODO: make sure that we are using the correct key
-# TODO: use import resources instead of path
 def create_sql_connection(path: Path):
     connection = None
-    with open("data\schema.sql") as fp:
+    resources = files("banksheets.data")
+    schema = "schema.sql"
+    with open(resources / schema, "r") as fp:
         connection = connect(path)
         connection.executescript(fp.read())
     return connection
