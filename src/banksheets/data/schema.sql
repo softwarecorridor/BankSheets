@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS bank_transaction (
     date TEXT,
     amount TEXT,
     description INTEGER,
-    transaction_id TEXT UNIQUE,
     FOREIGN KEY(description) REFERENCES description(description_id)
 );
 
@@ -17,40 +16,16 @@ CREATE TABLE IF NOT EXISTS potential_transaction (
     date TEXT,
     amount TEXT,
     description INTEGER,
-    preserve INTEGER DEFAULT 0 NOT NULL
+    FOREIGN KEY(description) REFERENCES description(description_id)
 );
 
-CREATE VIEW IF NOT EXISTS duplicate_transaction AS
-SELECT DISTINCT
-    pt.date AS potential_date,
-    pt.amount AS potential_amount,
-    pt.description AS potential_description,
-    t.date AS actual_date,
-    t.amount AS actual_amount,
-    t.description AS actual_description
-FROM
-    bank_transaction T
-INNER JOIN
-    potential_transaction pt
-ON
-    potential_date = actual_date
-	AND potential_amount = actual_amount
-    AND potential_description = actual_description
-
-UNION
-
-SELECT DISTINCT
-    pt.date AS potential_date,
-    pt.amount AS potential_amount,
-    pt.description AS potential_description,
-    NULL AS actual_date,
-    NULL AS actual_amount,
-    NULL AS actual_description
-FROM
-    potential_transaction pt
-GROUP BY
-    pt.date,
-    pt.amount,
-    pt.description
-HAVING
-    COUNT(*) > 1;
+CREATE VIEW IF NOT EXISTS duplicate_view AS
+    SELECT
+        pt.date,
+        pt.amount,
+        d.name,
+        CASE WHEN COUNT(bt.date) > 1 THEN 1 ELSE 0 END AS duplicate_bank,
+        CASE WHEN COUNT(pt.date) > 1 THEN 1 ELSE 0 END AS duplicate_potential
+    FROM potential_transaction as pt
+    LEFT JOIN bank_transaction bt ON bt.date = pt.date AND bt.amount = pt.amount AND bt.description = pt.description
+	INNER JOIN description d ON d.description_id = pt.description;
