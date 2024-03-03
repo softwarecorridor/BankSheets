@@ -1,6 +1,5 @@
 from sqlite3 import Connection
 
-import pytest
 from pytest import fixture, raises
 
 from banksheets.entry import DataEntry
@@ -12,9 +11,6 @@ from banksheets.sql_commands import (
     preserve_potential,
     remove_potential,
 )
-
-# TODO: just make duplicate_view check for bank_tranasction (deal with ids instead of items)
-# TODO: make front end figure out if the user tries to insert multiple copies of the same thing
 
 
 @fixture
@@ -56,6 +52,16 @@ def test_description_single(sql: Connection, generic_entry: DataEntry):
         c = conn.execute(description)
         res = c.fetchone()[0]
         assert generic_entry.description == res
+
+
+def test_description_multiple_calls(sql: Connection, generic_entry: DataEntry):
+    with sql as conn:
+        insert_descriptions([generic_entry], conn)
+        insert_descriptions([generic_entry], conn)
+        description = "SELECT name FROM description;"
+        c = conn.execute(description)
+        res = c.fetchall()
+        assert len(res) == 1
 
 
 def test_description_empty(sql: Connection):
@@ -115,8 +121,11 @@ def test_insert_potential_transactions_no_duplicates(
         c = conn.execute(potential)
         res = c.fetchall()
         assert len(res) == 1
-        assert generic_entry.date.strftime("%d/%m/%Y") == res[0][0]
-        assert generic_entry.amount == float(res[0][1])
+        assert generic_entry.date.strftime("%d/%m/%Y") == res[0][1]
+        assert generic_entry.amount == float(res[0][2])
+
+        res = get_duplicate_records(conn)
+        assert len(res) == 0
 
 
 def test_insert_potential_transactions_duplicates(
@@ -135,6 +144,9 @@ def test_get_duplicates_one_duplicate(sql: Connection, generic_entry: DataEntry)
     with sql as conn:
         insert_descriptions([generic_entry], conn)
         insert_potential_transactions([generic_entry], conn)
+        preserve_potential(conn)
+
+        insert_potential_transactions([generic_entry], conn)
         records = get_duplicate_records(conn)
         assert len(records) == 1
         assert generic_entry.date.strftime("%d/%m/%Y") == records[0][0]
@@ -145,27 +157,28 @@ def test_get_duplicates_one_duplicate(sql: Connection, generic_entry: DataEntry)
 def test_get_duplicates_multiple_same(sql: Connection, generic_entry: DataEntry):
     with sql as conn:
         insert_descriptions([generic_entry], conn)
-        insert_potential_transactions(
-            [generic_entry, generic_entry, generic_entry], conn
-        )
+        insert_potential_transactions([generic_entry], conn)
+        preserve_potential(conn)
+
+        insert_potential_transactions([generic_entry, generic_entry], conn)
         records = get_duplicate_records(conn)
-        assert len(records) == 1
+        assert len(records) == 2
         assert generic_entry.date.strftime("%d/%m/%Y") == records[0][0]
         assert generic_entry.amount == float(records[0][1])
         assert generic_entry.description == records[0][2]
 
 
-def test_get_duplicates_multiple_different(sql: Connection, generic_entry: DataEntry):
+def test_get_duplicates_multiple_different(
+    sql: Connection, generic_entry: DataEntry, generic_entry1: DataEntry
+):
     with sql as conn:
         insert_descriptions([generic_entry], conn)
-        insert_potential_transactions(
-            [generic_entry, generic_entry, generic_entry], conn
-        )
+        insert_potential_transactions([generic_entry], conn)
+        preserve_potential(conn)
+
+        insert_potential_transactions([generic_entry1, generic_entry1], conn)
         records = get_duplicate_records(conn)
-        assert len(records) == 1
-        assert generic_entry.date.strftime("%d/%m/%Y") == records[0][0]
-        assert generic_entry.amount == float(records[0][1])
-        assert generic_entry.description == records[0][2]
+        assert len(records) == 0
 
 
 def test_get_duplicates_no_duplicates(sql: Connection, generic_entry: DataEntry):
@@ -183,13 +196,13 @@ def test_preserve_potential(sql: Connection, generic_entry: DataEntry):
         preserve_potential(conn)
 
         # check we saved
-        statement = "SELECT from bank_transaction;"
+        statement = "SELECT * FROM bank_transaction;"
         res = conn.execute(statement)
         records = res.fetchall()
         assert len(records) == 1
 
         # check we dumped potential
-        statement = "SELECT from potential_transaction;"
+        statement = "SELECT * FROM potential_transaction;"
         res = conn.execute(statement)
         records = res.fetchall()
         assert len(records) == 0
@@ -199,12 +212,26 @@ def test_remove_from_potential_single(sql: Connection, generic_entry: DataEntry)
     with sql as conn:
         insert_descriptions([generic_entry], conn)
         insert_potential_transactions([generic_entry], conn)
-        remove_potential(conn)
+        remove_potential(conn, [generic_entry])
 
-        statement = "SELECT from potential_transaction;"
+        statement = "SELECT * from potential_transaction;"
         res = conn.execute(statement)
         records = res.fetchall()
         assert len(records) == 0
+
+
+def test_remove_from_potential_multiple_copies(
+    sql: Connection, generic_entry: DataEntry
+):
+    with sql as conn:
+        insert_descriptions([generic_entry], conn)
+        insert_potential_transactions([generic_entry, generic_entry], conn)
+        remove_potential(conn, [generic_entry])
+
+        statement = "SELECT * from potential_transaction;"
+        res = conn.execute(statement)
+        records = res.fetchall()
+        assert len(records) == 1
 
 
 def test_remove_from_potential_multiple(
@@ -212,97 +239,10 @@ def test_remove_from_potential_multiple(
 ):
     with sql as conn:
         insert_descriptions([generic_entry], conn)
-        insert_potential_transactions([generic_entry], conn)
-        remove_potential(conn)
+        insert_potential_transactions([generic_entry, generic_entry1], conn)
+        remove_potential(conn, [generic_entry])
 
-        statement = "SELECT from potential_transaction;"
+        statement = "SELECT * from potential_transaction;"
         res = conn.execute(statement)
         records = res.fetchall()
         assert len(records) == 1
-
-
-# def test_get_duplicates_potential_duplicates(sql: Connection, generic_entry: DataEntry):
-#     with sql as conn:
-#         insert_descriptions([generic_entry], conn)
-#         insert_potential_transactions([generic_entry, generic_entry], conn)
-#         records = get_duplicate_records(conn)
-#         assert len(records) == 1
-#         assert generic_entry.date.strftime("%d/%m/%Y") == records[0][0]
-#         assert generic_entry.amount == float(records[0][1])
-#         assert generic_entry.description == records[0][2]
-#         assert 0 == records[0][3]
-#         assert 1 == records[0][4]
-
-
-# def test_preserve_potential_transaction(sql):
-#     with sql as conn:
-#         insert_potential_transactions([generic_entry], conn)
-#         description = "SELECT name FROM description;"
-#         c = conn.execute(description)
-#         res = c.fetchone()[0]
-#         assert generic_entry.description == res
-
-# @pytest.mark.skip()
-# def test_get_duplicates_combo_duplicates(sql: Connection, generic_entry: DataEntry):
-#     with sql as conn:
-#         insert_descriptions([generic_entry], conn)
-#         insert_potential_transactions([generic_entry, generic_entry], conn)
-#         records = get_duplicate_records(conn)
-
-#         assert len(records) == 1
-#         assert generic_entry.date.strftime("%d/%m/%Y") == records[0][0]
-#         assert generic_entry.amount == float(records[0][1])
-#         assert generic_entry.description == records[0][2]
-#         assert 1 == records[0][3]
-#         assert 1 == records[0][4]
-
-
-# @pytest.mark.skip()
-# def test_get_duplicates_commited_duplicates(sql: Connection, generic_entry: DataEntry):
-#     with sql as conn:
-#         insert_descriptions([generic_entry], conn)
-#         insert_potential_transactions([generic_entry, generic_entry], conn)
-#         records = get_duplicate_records(conn)
-
-#         assert len(records) == 1
-#         assert generic_entry.date.strftime("%d/%m/%Y") == records[0][0]
-#         assert generic_entry.amount == float(records[0][1])
-#         assert generic_entry.description == records[0][2]
-#         assert 1 == records[0][3]
-#         assert 0 == records[0][4]
-
-
-# def test_clear_potential(sql: Connection, generic_entry: DataEntry):
-#     with sql as conn:
-#         insert_descriptions([generic_entry], conn)
-#         insert_potential_transactions([generic_entry, generic_entry], conn)
-#         clear_potential_records(conn)
-#         potential = "SELECT * FROM potential_transaction;"
-#         c = conn.execute(potential)
-#         res = c.fetchall()
-#         assert len(res) == 0
-
-
-# def test_delete_potential(sql: Connection, generic_entry: DataEntry):
-#     with sql as conn:
-#         insert_descriptions([generic_entry], conn)
-#         insert_potential_transactions([generic_entry, generic_entry], conn)
-#         remove_from_potential_transaction([generic_entry], conn)
-#         potential = "SELECT * FROM potential_transaction;"
-#         c = conn.execute(potential)
-#         res = c.fetchall()
-#         assert len(res) == 1
-
-
-# def test_mark_duplicates_to_preserver():
-#     pass
-
-
-# @pytest.mark.skip()
-# def test_add_double_duplicate_keep_both():
-#     pass
-
-
-# @pytest.mark.skip()
-# def test_add_double_duplicate_keep_one():
-#     pass
