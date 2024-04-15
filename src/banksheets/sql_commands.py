@@ -60,7 +60,13 @@ def get_duplicate_records(sql_connection: Connection) -> list[tuple]:
 
 def get_potential_duplicates(sql_connection: Connection) -> list[tuple]:
     statement = """
-SELECT pt.id, date, amount, name, description_id
+
+SELECT pt.id, date, amount, name, description_id,
+    (SELECT COUNT(*)
+     FROM bank_transaction bt
+     WHERE bt.date = pt.date
+       AND bt.amount = pt.amount
+       AND bt.description_id = pt.description_id) AS bank_count
 FROM potential_transaction pt
 join description d on d.id=pt.description_id
 WHERE (date, amount, description_id) IN (
@@ -70,6 +76,7 @@ WHERE (date, amount, description_id) IN (
     HAVING COUNT(*) > 1
 )
 ORDER BY date, amount
+
 """
     cursor = sql_connection.cursor()
     c = cursor.execute(statement)
@@ -82,10 +89,12 @@ def preserve_potential(sql_connection: Connection) -> None:
         " amount, description_id FROM potential_transaction;"
     )
     sql_connection.execute(statement)
+    sql_connection.commit()
 
+
+def clear_potential(sql_connection: Connection) -> None:
     statement = "DELETE FROM potential_transaction;"
     sql_connection.execute(statement)
-    sql_connection.commit()
 
 
 def remove_potential(sql_connection: Connection, entries: list[int]) -> None:
