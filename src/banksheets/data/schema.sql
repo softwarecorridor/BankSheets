@@ -20,9 +20,3 @@ CREATE TABLE IF NOT EXISTS potential_transaction (
     description_id INTEGER,
     FOREIGN KEY(description_id) REFERENCES description(id)
 );
-
--- TODO: return just a potential transaction id?
-CREATE VIEW IF NOT EXISTS duplicate_view AS
-    SELECT pt.date, pt.amount, d.name FROM potential_transaction as pt
-    INNER JOIN bank_transaction bt ON bt.date = pt.date AND bt.amount = pt.amount AND bt.description = pt.description
-    INNER JOIN description d ON d.id = pt.description;
