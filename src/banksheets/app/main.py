@@ -18,7 +18,6 @@ from banksheets.transaction_reader import (
 )
 
 
-# TODO: use generators
 def get_data_from_folder(folder: Path) -> list[dict[str, str]]:
     transactions = []
     for file in folder.glob("*.csv"):
@@ -35,6 +34,7 @@ def read_file(path: Path) -> list[dict[str, str]]:
             pass
         except MissingHeadingMapping:
             pass
+    return []
 
 
 def convert_csv_data_to_dataentry(items: list[dict[str, str]]) -> list[DataEntry]:

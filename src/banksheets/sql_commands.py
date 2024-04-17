@@ -69,14 +69,21 @@ SELECT pt.id, date, amount, name, description_id,
        AND bt.description_id = pt.description_id) AS bank_count
 FROM potential_transaction pt
 join description d on d.id=pt.description_id
-WHERE (date, amount, description_id) IN (
+WHERE (
+    (date, amount, description_id) IN (
     SELECT date, amount, description_id
     FROM potential_transaction
     GROUP BY date, amount, description_id
-    HAVING COUNT(*) > 1
+    HAVING COUNT(*) > 1)
+    OR EXISTS (
+        SELECT 1
+        FROM bank_transaction bt
+        WHERE bt.date = pt.date
+          AND bt.amount = pt.amount
+          AND bt.description_id = pt.description_id
+    )
 )
 ORDER BY date, amount
-
 """
     cursor = sql_connection.cursor()
     c = cursor.execute(statement)
