@@ -93,7 +93,7 @@ def _ask_user_for_source() -> Path:
     path = None
     while path is None:
         text = input(
-            "Input the path to a file or directory contianing bank transactions:"
+            "Input the path to a file or directory containing bank transactions:"
         )
         temp_path = None
         try:
@@ -117,9 +117,30 @@ def _get_data(path: Path) -> list[DataEntry]:
     return convert_csv_data_to_dataentry(transaction_data)
 
 
-def main(output_db: Path):
-    path = _ask_user_for_source()
-    transaction_data = _get_data(path)
+def _ask_user_for_output() -> Path:
+    path = None
+    while path is None:
+        text = input("Input the path to a file or directory to store the database:")
+        temp_path: Path = None
+        try:
+            temp_path = Path(text)
+        except Exception:
+            pass
+        if temp_path is not None:
+            if temp_path.exists():
+                if temp_path.is_dir():
+                    path = temp_path / "output.db"
+                elif temp_path.suffix == ".db":
+                    path = temp_path
+        if path is None:
+            print(f'"{text}" is not a ".db" file or directory')
+    return path
+
+
+def main():
+    in_put_data = _ask_user_for_source()
+    output_db = _ask_user_for_output()
+    transaction_data = _get_data(in_put_data)
     with create_sql_connection(output_db) as db:
         insert_descriptions(transaction_data, db)
         insert_potential_transactions(transaction_data, db)
@@ -129,5 +150,4 @@ def main(output_db: Path):
 
 
 if __name__ == "__main__":
-    path_to_db = Path.cwd() / "output" / "output.db"
-    main(path_to_db)
+    main()
