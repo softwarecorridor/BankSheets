@@ -42,8 +42,8 @@ def insert_potential_transactions(
                 (entry.date.strftime("%m/%d/%Y"), entry.amount, entry.description)
             )
     sql_connection.executemany(
-        "INSERT OR IGNORE INTO potential_transaction(date, amount, description) VALUES"
-        " (?, ?, (SELECT description_id FROM description WHERE name=?));",
+        "INSERT OR IGNORE INTO potential_transaction(date, amount, description_id)"
+        " VALUES (?, ?, (SELECT id FROM description WHERE name=?));",
         to_insert,
     )
     sql_connection.commit()
@@ -58,33 +58,55 @@ def get_duplicate_records(sql_connection: Connection) -> list[tuple]:
     return c.fetchall()
 
 
+def get_potential_duplicates(sql_connection: Connection) -> list[tuple]:
+    statement = """
+
+SELECT pt.id, date, amount, name, description_id,
+    (SELECT COUNT(*)
+     FROM bank_transaction bt
+     WHERE bt.date = pt.date
+       AND bt.amount = pt.amount
+       AND bt.description_id = pt.description_id) AS bank_count
+FROM potential_transaction pt
+join description d on d.id=pt.description_id
+WHERE (
+    (date, amount, description_id) IN (
+    SELECT date, amount, description_id
+    FROM potential_transaction
+    GROUP BY date, amount, description_id
+    HAVING COUNT(*) > 1)
+    OR EXISTS (
+        SELECT 1
+        FROM bank_transaction bt
+        WHERE bt.date = pt.date
+          AND bt.amount = pt.amount
+          AND bt.description_id = pt.description_id
+    )
+)
+ORDER BY date, amount
+"""
+    cursor = sql_connection.cursor()
+    c = cursor.execute(statement)
+    return c.fetchall()
+
+
 def preserve_potential(sql_connection: Connection) -> None:
     statement = (
-        "INSERT INTO bank_transaction (date, amount, description) SELECT date, amount,"
-        " description FROM potential_transaction;"
+        "INSERT INTO bank_transaction (date, amount, description_id) SELECT date,"
+        " amount, description_id FROM potential_transaction;"
     )
-    sql_connection.execute(statement)
-
-    statement = "DELETE FROM potential_transaction;"
     sql_connection.execute(statement)
     sql_connection.commit()
 
 
-def remove_potential(sql_connection: Connection, entries: list[DataEntry]) -> None:
-    statement = (
-        "SELECT id FROM potential_transaction WHERE date=? AND amount=? AND"
-        " description=(SELECT description_id FROM description WHERE name=?) LIMIT 1;"
-    )
+def clear_potential(sql_connection: Connection) -> None:
+    statement = "DELETE FROM potential_transaction;"
+    sql_connection.execute(statement)
+
+
+def remove_potential(sql_connection: Connection, entries: list[int]) -> None:
     cursor = sql_connection.cursor()
-
-    def to_tuple(entry: DataEntry) -> tuple[str]:
-        return entry.date.strftime("%m/%d/%Y"), entry.amount, entry.description
-
-    for entry in map(to_tuple, entries):
-        c = cursor.execute(statement, entry)
-        res = c.fetchone()
-        if res is not None and len(res) > 0:
-            del_statement = "DELETE FROM potential_transaction WHERE id=?"
-            sql_connection.execute(del_statement, res)
-
-        sql_connection.commit()
+    placeholders = ",".join("?" * len(entries))  # Create a placeholder for each ID
+    del_statement = f"DELETE FROM potential_transaction WHERE id IN ({placeholders})"
+    cursor.execute(del_statement, tuple(entries))
+    sql_connection.commit()
