@@ -1,45 +1,6 @@
-from pytest import fixture, raises
+from pytest import raises
 
 from banksheets.entry import DataEntry
-
-
-@fixture
-def transaction_a():
-    return {
-        "date": "01/01/2023",
-        "description": "Company A",
-        "extra_desc": "City1, Street A",
-        "amount": "100.25",
-    }
-
-
-@fixture
-def transaction_a_negative():
-    return {
-        "date": "01/01/2023",
-        "description": "Company A",
-        "extra_desc": "City1, Street A",
-        "amount": "-100.25",
-    }
-
-
-@fixture
-def transaction_b():
-    return {
-        "date": "02/15/2023",
-        "description": "Company B",
-        "amount": "-150.75",
-    }
-
-
-@fixture
-def transaction_c():
-    return {
-        "date": "03/10/2023",
-        "description": "Company C",
-        "extra_desc": "City3, Street C",
-        "amount": "200",
-    }
 
 
 def test_parse(transaction_a):
