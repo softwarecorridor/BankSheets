@@ -20,3 +20,10 @@ CREATE TABLE IF NOT EXISTS potential_transaction (
     description_id INTEGER,
     FOREIGN KEY(description_id) REFERENCES description(id)
 );
+
+CREATE TABLE IF NOT EXISTS description_alias (
+    id INTEGER PRIMARY KEY,
+    description_id INTEGER UNIQUE NOT NULL,
+    name TEXT,
+    FOREIGN KEY (description_id) REFERENCES description(id)
+);
