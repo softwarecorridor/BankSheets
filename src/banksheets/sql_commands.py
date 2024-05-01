@@ -110,3 +110,14 @@ def remove_potential(sql_connection: Connection, entries: list[int]) -> None:
     del_statement = f"DELETE FROM potential_transaction WHERE id IN ({placeholders})"
     cursor.execute(del_statement, tuple(entries))
     sql_connection.commit()
+
+
+def get_descriptions_missing_alias(sql_connection: Connection) -> list[tuple[str]]:
+    cursor = sql_connection.cursor()
+    statement = (
+        "SELECT name FROM description WHERE id NOT IN (SELECT description_id"
+        "FROM description_alias);"
+    )
+
+    cursor.execute(statement)
+    return cursor.fetchall()
