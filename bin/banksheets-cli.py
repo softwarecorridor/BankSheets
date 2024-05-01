@@ -3,6 +3,7 @@ import click
 from banksheets.sql_commands import (
     clear_potential,
     create_sql_connection,
+    get_descriptions_missing_alias,
     insert_descriptions,
     insert_potential_transactions,
     preserve_potential,
@@ -50,6 +51,20 @@ def _query_user(db) -> None:
     remove_potential(db, to_delete_list)
 
 
+def _query_list_of_missing_descriptions(db) -> None:
+    for item in get_descriptions_missing_alias(db):
+        print(item[0])
+
+
+@click.group()
+def cli():
+    """
+    Banksheets is a tool for dealing with bank transactions in a quick manner that
+    doesn't rely on internet traffic.
+    """
+    pass
+
+
 @click.command()
 @click.option(
     "--source",
@@ -62,7 +77,8 @@ def _query_user(db) -> None:
     prompt="Output database",
     help="Specify the output database location (directory or file)",
 )
-def banksheets(source, output):
+def insert(source, output):
+    """Insert entries"""
     input_src = _check_source(source)
     output_src = convert_output(output)
     transaction_data = get_data(input_src)
@@ -74,5 +90,28 @@ def banksheets(source, output):
         clear_potential(db)
 
 
+@click.group()
+def alias():
+    """
+    Add aliases to descriptions
+    """
+    pass
+
+
+@alias.command(help="List all existing descriptions without an alias")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+def missinglist(source):
+    with create_sql_connection(source) as db:
+        _query_list_of_missing_descriptions(db)
+
+
+cli.add_command(alias)
+cli.add_command(insert)
+
 if __name__ == "__main__":
-    banksheets()
+    cli()
