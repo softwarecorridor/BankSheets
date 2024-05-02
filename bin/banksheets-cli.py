@@ -3,11 +3,15 @@ import click
 from banksheets.sql_commands import (
     clear_potential,
     create_sql_connection,
+    get_description_id_by_name,
+    get_description_id_by_name_like,
     get_descriptions_missing_alias,
+    insert_alias,
     insert_descriptions,
     insert_potential_transactions,
     preserve_potential,
     remove_potential,
+    replace_alias,
 )
 from banksheets.ui.common import (
     check_and_convert_source,
@@ -108,6 +112,70 @@ def alias():
 def missinglist(source):
     with create_sql_connection(source) as db:
         _query_list_of_missing_descriptions(db)
+
+
+@alias.command(help="Create an alias for a description ")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.option(
+    "--description",
+    prompt="Input description to alias (SQLITE LIKE ok)",
+    help="Specify the description to create an alias for.",
+)
+@click.option(
+    "--name",
+    prompt="Name to use as an alias",
+    help="Specify the name to use as an alias",
+)
+def create(source, description, name):
+    with create_sql_connection(source) as db:
+        ids = []
+        if "%" or "_" in description:
+            for result in get_description_id_by_name_like(db, description):
+                ids.append(result[0])
+        else:
+            result = get_description_id_by_name(db, description)
+            if result is not None:
+                ids.append(result[0])
+
+        if len(ids) > 0:
+            insert_alias(db, ids, name)
+
+
+@alias.command(help="Replace an alias for a description ")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.option(
+    "--description",
+    prompt="Input description to alias (SQLITE LIKE ok)",
+    help="Specify the description to create an alias for.",
+)
+@click.option(
+    "--name",
+    prompt="Name to use as an alias",
+    help="Specify the name to use as an alias",
+)
+def replace(source, description, name):
+    with create_sql_connection(source) as db:
+        ids = []
+        if "%" or "_" in description:
+            for result in get_description_id_by_name_like(db, description):
+                ids.append(result[0])
+        else:
+            result = get_description_id_by_name(db, description)
+            if result is not None:
+                ids.append(result[0])
+
+        if len(ids) > 0:
+            replace_alias(db, ids, name)
 
 
 cli.add_command(alias)
