@@ -116,8 +116,46 @@ def get_descriptions_missing_alias(sql_connection: Connection) -> list[tuple[str
     cursor = sql_connection.cursor()
     statement = (
         "SELECT name FROM description WHERE id NOT IN (SELECT description_id"
-        "FROM description_alias);"
+        " FROM description_alias);"
     )
 
     cursor.execute(statement)
     return cursor.fetchall()
+
+
+def get_description_id_by_name(sql_connection: Connection, name: str) -> int:
+    cursor = sql_connection.cursor()
+    statement = "SELECT id from description WHERE name=?"
+
+    cursor.execute(statement, (name,))
+    return cursor.fetchone()
+
+
+def get_description_id_by_name_like(
+    sql_connection: Connection, pattern: str
+) -> list[int]:
+    cursor = sql_connection.cursor()
+    statement = "SELECT id from description WHERE name LIKE ?"
+
+    cursor.execute(statement, (pattern,))
+    return cursor.fetchall()
+
+
+def insert_alias(sql_connection: Connection, id_list: list[int], alias_name: str):
+    statement = (
+        "INSERT OR IGNORE INTO description_alias(description_id, name) VALUES (?, ?);"
+    )
+    data = [(id, alias_name) for id in id_list]
+
+    sql_connection.executemany(statement, data)
+    sql_connection.commit()
+
+
+def replace_alias(sql_connection: Connection, id_list: list[int], alias_name: str):
+    statement = (
+        "INSERT OR REPLACE INTO description_alias(description_id, name) VALUES (?, ?);"
+    )
+    data = [(id, alias_name) for id in id_list]
+
+    sql_connection.executemany(statement, data)
+    sql_connection.commit()
