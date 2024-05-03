@@ -3,10 +3,15 @@ import click
 from banksheets.sql_commands import (
     clear_potential,
     create_sql_connection,
+    get_description_id_by_name,
+    get_description_id_by_name_like,
+    get_descriptions_missing_alias,
+    insert_alias,
     insert_descriptions,
     insert_potential_transactions,
     preserve_potential,
     remove_potential,
+    replace_alias,
 )
 from banksheets.ui.common import (
     check_and_convert_source,
@@ -50,6 +55,20 @@ def _query_user(db) -> None:
     remove_potential(db, to_delete_list)
 
 
+def _query_list_of_missing_descriptions(db) -> None:
+    for item in get_descriptions_missing_alias(db):
+        print(item[0])
+
+
+@click.group()
+def cli():
+    """
+    Banksheets is a tool for dealing with bank transactions in a quick manner that
+    doesn't rely on internet traffic.
+    """
+    pass
+
+
 @click.command()
 @click.option(
     "--source",
@@ -62,7 +81,8 @@ def _query_user(db) -> None:
     prompt="Output database",
     help="Specify the output database location (directory or file)",
 )
-def banksheets(source, output):
+def insert(source, output):
+    """Insert entries"""
     input_src = _check_source(source)
     output_src = convert_output(output)
     transaction_data = get_data(input_src)
@@ -74,5 +94,92 @@ def banksheets(source, output):
         clear_potential(db)
 
 
+@click.group()
+def alias():
+    """
+    Add aliases to descriptions
+    """
+    pass
+
+
+@alias.command(help="List all existing descriptions without an alias")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+def missinglist(source):
+    with create_sql_connection(source) as db:
+        _query_list_of_missing_descriptions(db)
+
+
+@alias.command(help="Create an alias for a description ")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.option(
+    "--description",
+    prompt="Input description to alias (SQLITE LIKE ok)",
+    help="Specify the description to create an alias for.",
+)
+@click.option(
+    "--name",
+    prompt="Name to use as an alias",
+    help="Specify the name to use as an alias",
+)
+def create(source, description, name):
+    with create_sql_connection(source) as db:
+        ids = []
+        if "%" or "_" in description:
+            for result in get_description_id_by_name_like(db, description):
+                ids.append(result[0])
+        else:
+            result = get_description_id_by_name(db, description)
+            if result is not None:
+                ids.append(result[0])
+
+        if len(ids) > 0:
+            insert_alias(db, ids, name)
+
+
+@alias.command(help="Replace an alias for a description ")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.option(
+    "--description",
+    prompt="Input description to alias (SQLITE LIKE ok)",
+    help="Specify the description to create an alias for.",
+)
+@click.option(
+    "--name",
+    prompt="Name to use as an alias",
+    help="Specify the name to use as an alias",
+)
+def replace(source, description, name):
+    with create_sql_connection(source) as db:
+        ids = []
+        if "%" or "_" in description:
+            for result in get_description_id_by_name_like(db, description):
+                ids.append(result[0])
+        else:
+            result = get_description_id_by_name(db, description)
+            if result is not None:
+                ids.append(result[0])
+
+        if len(ids) > 0:
+            replace_alias(db, ids, name)
+
+
+cli.add_command(alias)
+cli.add_command(insert)
+
 if __name__ == "__main__":
-    banksheets()
+    cli()
