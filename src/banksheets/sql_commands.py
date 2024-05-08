@@ -1,6 +1,7 @@
 from importlib.resources import files
 from pathlib import Path
 from sqlite3 import Connection, connect
+from typing import Optional
 
 from banksheets.entry import DataEntry
 
@@ -159,3 +160,46 @@ def replace_alias(sql_connection: Connection, id_list: list[int], alias_name: st
 
     sql_connection.executemany(statement, data)
     sql_connection.commit()
+
+
+def search(
+    sql_connection: Connection,
+    start_date: Optional[str],
+    end_date: Optional[str],
+    filter: Optional[str],
+):
+    cursor = sql_connection.cursor()
+    statement = """
+SELECT
+    bt.date AS transaction_date,
+    bt.amount AS transaction_amount,
+    COALESCE(da.name, d.name) AS transaction_description
+FROM
+    bank_transaction bt
+LEFT JOIN
+    description d ON bt.description_id = d.id
+LEFT JOIN
+    description_alias da ON bt.description_id = da.description_id
+"""
+    conditions = []
+    parameters = []
+
+    if start_date:
+        conditions.append("bt.date >= ?")
+        parameters.append(start_date)
+
+    if end_date:
+        conditions.append("bt.date <= ?")
+        parameters.append(end_date)
+
+    if filter:
+        conditions.append("(d.name = ? OR da.name = ?)")
+        parameters.extend([filter, filter])
+
+    if conditions:
+        statement += "WHERE " + " AND ".join(conditions)
+
+    # Add the ORDER BY clause
+    statement += " ORDER BY bt.date ASC;"
+    cursor.execute(statement, parameters)
+    return cursor.fetchall()

@@ -12,6 +12,7 @@ from banksheets.sql_commands import (
     preserve_potential,
     remove_potential,
     replace_alias,
+    search,
 )
 from banksheets.ui.common import (
     check_and_convert_source,
@@ -178,8 +179,58 @@ def replace(source, description, name):
             replace_alias(db, ids, name)
 
 
+@click.command(help="Report data out")
+@click.option(
+    "--source",
+    prompt="Input data source",
+    help="Specify the input data source (database only)",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.option(
+    "--start",
+    # prompt="Input a start date",
+    help="Specify the start date, if none is given report from the earliest.",
+)
+@click.option(
+    "--end",
+    # prompt="Input an end date",
+    help="Specify the start date, if none is given report until the latest.",
+)
+@click.option(
+    "--description",
+    # prompt="Input a description",
+    help="Specify a description to filter by",
+)
+@click.option(
+    "--format",
+    type=click.Choice(["csv"], case_sensitive=False),
+    default="csv",
+    help="Format of the report (default: csv)",
+)
+@click.option(
+    "--output",
+    help="Output destination. Will print to console if nothing given",
+)
+def report(source, start, end, description, format, output):
+    with create_sql_connection(source) as db:
+        result = search(db, start, end, description)
+
+        def format(data: tuple) -> str:
+            return f"{','.join(data)}\n"
+
+        formatted_iter = map(format, result)
+
+        if output:
+            with open(output, "w") as fp:
+                fp.writelines(formatted_iter)
+        else:
+            for line in formatted_iter:
+                print(line, end="")
+
+
 cli.add_command(alias)
 cli.add_command(insert)
+cli.add_command(report)
 
 if __name__ == "__main__":
     cli()
