@@ -148,4 +148,7 @@ def convert_output(path: str):
         else:
             output_path.mkdir(parents=True, exist_ok=True)
             output_path = output_path / "output.db"
+    else:
+        if output_path.is_dir():
+            output_path = output_path / "output.db"
     return output_path
