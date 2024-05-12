@@ -126,6 +126,8 @@ def check_and_convert_source(path: str) -> Path:
             raise FileNotFoundError(
                 f"{source_path.stem} does not contain any CSV files."
             )
+        else:
+            return source_path
     elif source_path.suffix != ".csv":
         raise TypeError(f"{source_path.stem} is not a CSV file.")
     else:
