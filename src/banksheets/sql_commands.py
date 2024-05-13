@@ -40,7 +40,7 @@ def insert_potential_transactions(
     for entry in data_entries:
         if entry is not None:
             to_insert.append(
-                (entry.date.strftime("%m/%d/%Y"), entry.amount, entry.description)
+                (entry.date.strftime(r"%Y-%m-%d"), entry.amount, entry.description)
             )
     sql_connection.executemany(
         "INSERT OR IGNORE INTO potential_transaction(date, amount, description_id)"
