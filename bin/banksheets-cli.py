@@ -56,6 +56,20 @@ def _query_user(db) -> None:
     remove_potential(db, to_delete_list)
 
 
+def _keep_duplicates(db) -> None:
+    to_delete_list = []
+    for group in get_duplicate_groups(db):
+        entry_count = len(group[0])
+        db_count = group[1]
+
+        num_to_keep = 0 if db_count > 0 else 1
+        if 0 <= num_to_keep <= entry_count:
+            num_to_keep = entry_count - num_to_keep
+            to_delete_list.extend(group[0][:num_to_keep])
+
+    remove_potential(db, to_delete_list)
+
+
 def _query_list_of_missing_descriptions(db) -> None:
     for item in get_descriptions_missing_alias(db):
         print(item[0])
@@ -82,7 +96,15 @@ def cli():
     prompt="Output database",
     help="Specify the output database location (directory or file)",
 )
-def insert(source, output):
+@click.option(
+    "--skip-duplicates",
+    is_flag=True,
+    help=(
+        "Don't prompt for possible duplicates. Instead ensure there is at least one"
+        " in the database."
+    ),
+)
+def insert(source, output, skip_duplicates):
     """Insert entries"""
     input_src = _check_source(source)
     output_src = convert_output(output)
@@ -90,7 +112,10 @@ def insert(source, output):
     with create_sql_connection(output_src) as db:
         insert_descriptions(transaction_data, db)
         insert_potential_transactions(transaction_data, db)
-        _query_user(db)
+        if skip_duplicates:
+            _keep_duplicates(db)
+        else:
+            _query_user(db)
         preserve_potential(db)
         clear_potential(db)
 
