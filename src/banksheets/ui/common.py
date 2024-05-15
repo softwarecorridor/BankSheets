@@ -38,10 +38,8 @@ def _read_file(path: Path) -> list[dict[str, str]]:
         try:
             reader = SkipAheadDictReader(f)
             return list(reader)
-        except NoHeaderException:
-            pass
-        except MissingHeadingMapping:
-            pass
+        except (NoHeaderException, MissingHeadingMapping):
+            print(f"Problem parsing: {path.name}")
     return []
 
 
@@ -59,7 +57,7 @@ def convert_csv_data_to_dataentry(items: list[dict[str, str]]) -> list[DataEntry
             try:
                 return DataEntry(**item)
             except ValueError:
-                print("weird data")
+                pass
 
         converted = map(create, items)
         return list(converted)
